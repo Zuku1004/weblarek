@@ -1,5 +1,5 @@
 import { Api } from './base/Api';
-import { IApi, IProduct, IOrderRequest, IOrderConfirmation, IProductListResponse } from '../types';
+import { IProduct, IOrderRequest, IOrderConfirmation, IProductListResponse } from '../types';
 
 /**
  * ShopApi — класс коммуникационного слоя приложения.
