@@ -1,31 +1,29 @@
-import { Api } from './base/Api';
-import { IProduct, IOrderRequest, IOrderConfirmation, IProductListResponse } from '../types';
-
+import { IApi, IProduct, IOrderRequest, IOrderConfirmation, IProductListResponse } from '../types';
+ 
 /**
  * ShopApi — класс коммуникационного слоя приложения.
- * Использует функциональность базового класса Api через наследование.
- * Инкапсулирует конкретные эндпоинты сервера Web-Ларёк.
+ * Использует функциональность класса Api через композицию.
+ * Принимает экземпляр IApi в конструктор, не наследует его.
  */
-export class ShopApi extends Api {
+export class ShopApi {
+  private readonly _api: IApi;
   private readonly _cdnBase: string;
-
+ 
   /**
    * @param cdnBase — базовый URL для формирования пути к изображениям товаров
-   * @param baseUrl — базовый URL API сервера
-   * @param options — дополнительные опции для HTTP-запросов
+   * @param api — экземпляр класса, реализующего интерфейс IApi
    */
-  constructor(cdnBase: string, baseUrl: string, options?: RequestInit) {
-    super(baseUrl, options);
+  constructor(cdnBase: string, api: IApi) {
     this._cdnBase = cdnBase;
+    this._api = api;
   }
-
+ 
   /**
-   * запрашивает список всех товаров с сервера.
+   * Запрашивает список всех товаров с сервера.
    * Дополняет пути к изображениям полным CDN-адресом.
-   * @returns Promise с массивом товаров
    */
   fetchProducts(): Promise<IProduct[]> {
-    return this.get<IProductListResponse>('/product/').then(
+    return this._api.get<IProductListResponse>('/product/').then(
       (response: IProductListResponse) =>
         response.items.map((item) => ({
           ...item,
@@ -33,14 +31,13 @@ export class ShopApi extends Api {
         }))
     );
   }
-
+ 
   /**
-   * отправляет оформленный заказ на сервер.
+   * Отправляет оформленный заказ на сервер.
    * @param orderData — объект с данными покупателя, товарами и суммой
-   * @returns Promise с подтверждением заказа (id и итоговая сумма)
    */
   submitOrder(orderData: IOrderRequest): Promise<IOrderConfirmation> {
-    return this.post<IOrderConfirmation>('/order/', orderData).then(
+    return this._api.post<IOrderConfirmation>('/order/', orderData).then(
       (result: IOrderConfirmation) => result
     );
   }
