@@ -7,9 +7,7 @@ import { IProduct } from '../../types';
 export class CartModel {
   private _cartItems: IProduct[] = [];
 
-  constructor() {
-    this._cartItems = [];
-  }
+  constructor() {}
 
   /**
    * Возвращает текущий список товаров в корзине.
