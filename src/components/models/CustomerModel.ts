@@ -40,7 +40,7 @@ export class CustomerModel {
    */
   getBuyerData(): IBuyer {
     return {
-      payment: this._paymentMethod as TPayment,
+      payment: this._paymentMethod ,
       address: this._deliveryAddress,
       email: this._customerEmail,
       phone: this._customerPhone,

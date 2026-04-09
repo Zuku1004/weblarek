@@ -24,7 +24,7 @@ export interface IProduct {
 
 // Описывает данные покупателя при оформлении заказа
 export interface IBuyer {
-  payment: TPayment;
+  payment: TPayment | '';
   email: string;
   phone: string;
   address: string;
