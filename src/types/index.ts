@@ -50,3 +50,4 @@ export interface IOrderConfirmation {
   id: string;
   total: number;
 }
+
