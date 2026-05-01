@@ -32,7 +32,7 @@ const cartModel = new CartModel(events);
 const customerModel = new CustomerModel(events);
 
 // ─── Инициализация компонентов представления ──────────────────────────────
-const pageContainer = ensureElement('.page__content');
+const pageContainer = ensureElement('.page');
 const pageView = new PageView(pageContainer, events);
 const catalogView = new CatalogView(pageContainer);
 
