@@ -19,19 +19,19 @@ import { API_URL, CDN_URL } from './utils/constants';
 import { cloneTemplate, ensureElement } from './utils/utils';
 import { IProduct, IOrderRequest } from './types';
 
-//  Инициализация брокера событий 
+// ─── Инициализация брокера событий ────────────────────────────────────────
 const events = new EventEmitter();
 
-//  Инициализация API 
+// ─── Инициализация API ────────────────────────────────────────────────────
 const baseApi = new Api(API_URL);
 const shopApi = new ShopApi(CDN_URL, baseApi);
 
-// Инициализация моделей данных 
+// ─── Инициализация моделей данных ─────────────────────────────────────────
 const catalogModel = new CatalogModel(events);
 const cartModel = new CartModel(events);
 const customerModel = new CustomerModel(events);
 
-//  Инициализация компонентов представления
+// ─── Инициализация компонентов представления ──────────────────────────────
 const pageContainer = ensureElement('.page__content');
 const pageView = new PageView(pageContainer, events);
 const catalogView = new CatalogView(pageContainer);
@@ -62,7 +62,7 @@ const successView = new SuccessView(successElement, events);
 
 // ─── ПРЕЗЕНТЕР: обработчики событий ──────────────────────────────────────
 
-// каталог обновлён: отрисовываем карточки
+// Каталог обновлён — отрисовываем карточки
 events.on('catalog:updated', () => {
   const products = catalogModel.getAllProducts();
   const cardCatalogTemplate = ensureElement('#card-catalog') as HTMLTemplateElement;
@@ -80,7 +80,7 @@ events.on('catalog:updated', () => {
   catalogView.items = cards;
 });
 
-// Корзина изменилась : обновляем отображение
+// Корзина изменилась — обновляем отображение
 events.on('cart:changed', () => {
   pageView.counter = cartModel.getItemCount();
 
@@ -100,7 +100,7 @@ events.on('cart:changed', () => {
   cartView.disabled = cartModel.getItemCount() === 0;
 });
 
-// Данные покупателя изменились: обновляем состояние форм
+// Данные покупателя изменились — обновляем состояние форм
 events.on('customer:changed', () => {
   const errors = customerModel.checkValidity();
   deliveryForm.valid = !errors.payment && !errors.address;
@@ -109,7 +109,7 @@ events.on('customer:changed', () => {
   contactsForm.errors = errors.email || errors.phone || '';
 });
 
-// Выбранный товар изменился отрисовываем превью
+// Выбранный товар изменился — отрисовываем превью
 events.on('item:selected', () => {
   const product = catalogModel.getSelectedItem();
   if (!product) return;
@@ -150,7 +150,7 @@ events.on('card:actionClick', () => {
   modalView.close();
 });
 
-// удаление товара из корзины
+// Удаление товара из корзины
 events.on('cart:removeItem', (data: { id: string }) => {
   cartModel.deleteFromCart(data.id);
 });
@@ -178,7 +178,7 @@ events.on('delivery:addressChanged', (data: { address: string }) => {
   customerModel.updateField('address', data.address);
 });
 
-// Отправка формы доставки: переход к форме контактов
+// Отправка формы доставки — переход к форме контактов
 events.on('delivery:submit', () => {
   const buyerData = customerModel.getBuyerData();
   contactsForm.email = buyerData.email;
@@ -221,7 +221,8 @@ events.on('success:close', () => {
   modalView.close();
 });
 
-//  Загрузка товаров с сервера 
+// ─── Загрузка товаров с сервера ───────────────────────────────────────────
+shopApi
   .fetchProducts()
   .then((products) => {
     catalogModel.loadProducts(products);
