@@ -5,7 +5,7 @@ import { EventEmitter } from './components/base/Events';
 import { CatalogModel } from './components/models/CatalogModel';
 import { CartModel } from './components/models/CartModel';
 import { CustomerModel } from './components/models/CustomerModel';
-import { PageView } from './components/view/PageView';
+import { HeaderView } from './components/view/HeaderView';
 import { ModalView } from './components/view/ModalView';
 import { CatalogView } from './components/view/CatalogView';
 import { CartView } from './components/view/CartView';
@@ -18,55 +18,57 @@ import { SuccessView } from './components/view/SuccessView';
 import { API_URL, CDN_URL } from './utils/constants';
 import { cloneTemplate, ensureElement } from './utils/utils';
 import { IProduct, IOrderRequest } from './types';
-
-// ─── Инициализация брокера событий ────────────────────────────────────────
+ 
+//  Инициализация брокера событий 
 const events = new EventEmitter();
-
-// ─── Инициализация API ────────────────────────────────────────────────────
+ 
+//  Инициализация API 
 const baseApi = new Api(API_URL);
 const shopApi = new ShopApi(CDN_URL, baseApi);
-
-// ─── Инициализация моделей данных ─────────────────────────────────────────
+ 
+//  Инициализация моделей данных 
 const catalogModel = new CatalogModel(events);
 const cartModel = new CartModel(events);
 const customerModel = new CustomerModel(events);
-
-// ─── Инициализация компонентов представления ──────────────────────────────
+ 
+//  Инициализация компонентов представления 
+const headerContainer = ensureElement('.page__wrapper');
+const headerView = new HeaderView(headerContainer, events);
+ 
 const pageContainer = ensureElement('.page');
-const pageView = new PageView(pageContainer, events);
 const catalogView = new CatalogView(pageContainer);
-
+ 
 const modalContainer = ensureElement('#modal-container');
 const modalView = new ModalView(modalContainer, events);
-
+ 
 const cartTemplate = ensureElement('#basket') as HTMLTemplateElement;
 const cartView = new CartView(cloneTemplate(cartTemplate), events);
-
+ 
 const cardPreviewTemplate = ensureElement('#card-preview') as HTMLTemplateElement;
 const cardPreviewElement = cloneTemplate(cardPreviewTemplate);
 const cardPreview = new CardPreview(cardPreviewElement, () =>
   events.emit('card:actionClick')
 );
-
+ 
 const deliveryTemplate = ensureElement('#order') as HTMLTemplateElement;
 const deliveryFormElement = cloneTemplate(deliveryTemplate) as HTMLFormElement;
 const deliveryForm = new DeliveryForm(deliveryFormElement, events);
-
+ 
 const contactsTemplate = ensureElement('#contacts') as HTMLTemplateElement;
 const contactsFormElement = cloneTemplate(contactsTemplate) as HTMLFormElement;
 const contactsForm = new ContactsForm(contactsFormElement, events);
-
+ 
 const successTemplate = ensureElement('#success') as HTMLTemplateElement;
 const successElement = cloneTemplate(successTemplate);
 const successView = new SuccessView(successElement, events);
-
-// ─── ПРЕЗЕНТЕР: обработчики событий ──────────────────────────────────────
-
-// Каталог обновлён — отрисовываем карточки
+ 
+//  ПРЕЗЕНТЕР: обработчики событий
+ 
+// Каталог обновлён  отрисовываем карточки
 events.on('catalog:updated', () => {
   const products = catalogModel.getAllProducts();
   const cardCatalogTemplate = ensureElement('#card-catalog') as HTMLTemplateElement;
-
+ 
   const cards = products.map((product) => {
     const cardElement = cloneTemplate(cardCatalogTemplate);
     const card = new CardCatalog(cardElement, () =>
@@ -75,17 +77,17 @@ events.on('catalog:updated', () => {
     card.render(product);
     return cardElement;
   });
-
-  pageView.counter = cartModel.getItemCount();
+ 
+  headerView.counter = cartModel.getItemCount();
   catalogView.items = cards;
 });
-
-// Корзина изменилась — обновляем отображение
+ 
+// Корзина изменилась  обновляем отображение
 events.on('cart:changed', () => {
-  pageView.counter = cartModel.getItemCount();
-
+  headerView.counter = cartModel.getItemCount();
+ 
   const cardCartTemplate = ensureElement('#card-basket') as HTMLTemplateElement;
-
+ 
   const cartItems = cartModel.getCartItems().map((item, index) => {
     const cardElement = cloneTemplate(cardCartTemplate);
     const card = new CardCart(cardElement, () =>
@@ -94,32 +96,40 @@ events.on('cart:changed', () => {
     card.render({ ...item, index: index + 1 });
     return cardElement;
   });
-
+ 
   cartView.items = cartItems;
   cartView.total = cartModel.calculateTotal();
   cartView.disabled = cartModel.getItemCount() === 0;
 });
-
-// Данные покупателя изменились — обновляем состояние форм
+ 
+// Данные покупателя изменились  обновляем формы на основе данных модели
 events.on('customer:changed', () => {
   const errors = customerModel.checkValidity();
+  const buyerData = customerModel.getBuyerData();
+ 
+  // Обновляем представление на основе данных модели
+  deliveryForm.payment = buyerData.payment;
+  deliveryForm.address = buyerData.address;
   deliveryForm.valid = !errors.payment && !errors.address;
   deliveryForm.errors = errors.payment || errors.address || '';
+ 
+  contactsForm.email = buyerData.email;
+  contactsForm.phone = buyerData.phone;
   contactsForm.valid = !errors.email && !errors.phone;
   contactsForm.errors = errors.email || errors.phone || '';
 });
-
-// Выбранный товар изменился — отрисовываем превью
+ 
+// Выбранный товар изменился  отрисовываем превью
 events.on('item:selected', () => {
   const product = catalogModel.getSelectedItem();
   if (!product) return;
-
+ 
   const inCart = cartModel.hasItem(product.id);
   const hasNoPrice = product.price === null;
-
+ 
   let buttonText = '';
   let buttonDisabled = false;
-
+ 
   if (hasNoPrice) {
     buttonText = 'Недоступно';
     buttonDisabled = true;
@@ -127,21 +137,21 @@ events.on('item:selected', () => {
     buttonText = inCart ? 'Убрать из корзины' : 'В корзину';
     buttonDisabled = false;
   }
-
+ 
   cardPreview.render({ ...product, buttonText, buttonDisabled });
   modalView.render({ content: cardPreview.render() });
 });
-
+ 
 // Пользователь кликнул на карточку в каталоге
 events.on('card:select', (product: IProduct) => {
   catalogModel.selectItem(product);
 });
-
+ 
 // Пользователь нажал кнопку действия в превью (купить / убрать)
 events.on('card:actionClick', () => {
   const product = catalogModel.getSelectedItem();
   if (!product || product.price === null) return;
-
+ 
   if (cartModel.hasItem(product.id)) {
     cartModel.deleteFromCart(product.id);
   } else {
@@ -149,53 +159,47 @@ events.on('card:actionClick', () => {
   }
   modalView.close();
 });
-
+ 
 // Удаление товара из корзины
 events.on('cart:removeItem', (data: { id: string }) => {
   cartModel.deleteFromCart(data.id);
 });
-
+ 
 // Открытие корзины
 events.on('cart:open', () => {
   modalView.render({ content: cartView.render() });
 });
-
-// Начало оформления заказа
+ 
+// Начало оформления заказа  только открываем форму
 events.on('checkout:start', () => {
-  const buyerData = customerModel.getBuyerData();
-  deliveryForm.payment = buyerData.payment;
-  deliveryForm.address = buyerData.address;
   modalView.render({ content: deliveryForm.render() });
 });
-
-// Выбор способа оплаты
+ 
+// Выбор способа оплаты  сохраняем в модель
 events.on('delivery:paymentSelected', (data: { payment: string }) => {
   customerModel.updateField('payment', data.payment);
 });
-
-// Изменение адреса доставки
+ 
+// Изменение адреса  сохраняем в модель
 events.on('delivery:addressChanged', (data: { address: string }) => {
   customerModel.updateField('address', data.address);
 });
-
-// Отправка формы доставки — переход к форме контактов
+ 
+// Переход к форме контактов
 events.on('delivery:submit', () => {
-  const buyerData = customerModel.getBuyerData();
-  contactsForm.email = buyerData.email;
-  contactsForm.phone = buyerData.phone;
   modalView.render({ content: contactsForm.render() });
 });
-
-// Изменение email
+ 
+// Изменение email  сохраняем в модель
 events.on('contacts:emailChanged', (data: { email: string }) => {
   customerModel.updateField('email', data.email);
 });
-
-// Изменение телефона
+ 
+// Изменение телефона  сохраняем в модель
 events.on('contacts:phoneChanged', (data: { phone: string }) => {
   customerModel.updateField('phone', data.phone);
 });
-
+ 
 // Отправка заказа на сервер
 events.on('contacts:submit', async () => {
   const buyerData = customerModel.getBuyerData();
@@ -204,7 +208,7 @@ events.on('contacts:submit', async () => {
     items: cartModel.getCartItems().map((item) => item.id),
     total: cartModel.calculateTotal(),
   };
-
+ 
   try {
     const result = await shopApi.submitOrder(order);
     cartModel.emptyCart();
@@ -215,13 +219,13 @@ events.on('contacts:submit', async () => {
     console.error('Ошибка при оформлении заказа:', error);
   }
 });
-
+ 
 // Закрытие экрана успешного заказа
 events.on('success:close', () => {
   modalView.close();
 });
-
-// ─── Загрузка товаров с сервера ───────────────────────────────────────────
+ 
+//  Загрузка товаров с сервера 
 shopApi
   .fetchProducts()
   .then((products) => {
@@ -230,3 +234,4 @@ shopApi
   .catch((error) => {
     console.error('Ошибка загрузки товаров:', error);
   });
+ 
