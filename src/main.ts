@@ -5,7 +5,7 @@ import { EventEmitter } from './components/base/Events';
 import { CatalogModel } from './components/models/CatalogModel';
 import { CartModel } from './components/models/CartModel';
 import { CustomerModel } from './components/models/CustomerModel';
-import { HeaderView } from './components/view/HeaderView';
+import { HeaderView } from './components/view/HeaderView.ts';
 import { ModalView } from './components/view/ModalView';
 import { CatalogView } from './components/view/CatalogView';
 import { CartView } from './components/view/CartView';
