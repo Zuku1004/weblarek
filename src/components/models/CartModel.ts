@@ -1,13 +1,17 @@
 import { IProduct } from '../../types';
+import { IEvents } from '../base/Events';
 
 /**
- * CartModel — модель корзины покупок.
- * Хранит список выбранных пользователем товаров и предоставляет методы управления ими.
+ * CartModel  модель корзины покупок.
+ * Хранит список выбранных пользователем товаров и генерирует события при изменениях.
  */
 export class CartModel {
   private _cartItems: IProduct[] = [];
+  protected events: IEvents;
 
-  constructor() {}
+  constructor(events: IEvents) {
+    this.events = events;
+  }
 
   /**
    * Возвращает текущий список товаров в корзине.
@@ -17,31 +21,33 @@ export class CartModel {
   }
 
   /**
-   * Добавляет товар в корзину.
-   * @param product — объект добавляемого товара
+   * Добавляет товар в корзину и генерирует событие изменения.
+   * @param product  объект добавляемого товара
    */
   addToCart(product: IProduct): void {
     this._cartItems.push(product);
+    this.events.emit('cart:changed');
   }
 
   /**
-   * Удаляет товар из корзины по его ID.
-   * @param productId — идентификатор удаляемого товара
+   * Удаляет товар из корзины по ID и генерирует событие изменения.
+   * @param productId  идентификатор удаляемого товара
    */
   deleteFromCart(productId: string): void {
     this._cartItems = this._cartItems.filter((item) => item.id !== productId);
+    this.events.emit('cart:changed');
   }
 
   /**
-   * Полностью очищает корзину.
+   * Полностью очищает корзину и генерирует событие изменения.
    */
   emptyCart(): void {
     this._cartItems = [];
+    this.events.emit('cart:changed');
   }
 
   /**
-   * Рассчитывает и возвращает суммарную стоимость товаров в корзине.
-   * Товары без цены (null) не учитываются.
+   * Рассчитывает суммарную стоимость товаров в корзине.
    */
   calculateTotal(): number {
     return this._cartItems.reduce((sum, item) => sum + (item.price ?? 0), 0);
@@ -55,8 +61,8 @@ export class CartModel {
   }
 
   /**
-   * Проверяет, находится ли товар с указанным ID в корзине.
-   * @param productId — идентификатор проверяемого товара
+   * Проверяет наличие товара в корзине по ID.
+   * @param productId  идентификатор проверяемого товара
    */
   hasItem(productId: string): boolean {
     return this._cartItems.some((item) => item.id === productId);

@@ -1,23 +1,25 @@
 import { IBuyer, TPayment, TValidationErrors } from '../../types';
+import { IEvents } from '../base/Events';
 
 /**
- * CustomerModel — модель данных покупателя.
- * Хранит введённые пользователем данные для оформления заказа
- * и выполняет их валидацию.
+ * CustomerModel  модель данных покупателя.
+ * хранит данные для оформления заказа и генерирует события при изменениях.
  */
 export class CustomerModel {
   private _paymentMethod: TPayment | '' = '';
   private _deliveryAddress: string = '';
   private _customerEmail: string = '';
   private _customerPhone: string = '';
+  protected events: IEvents;
 
-  constructor() {}
+  constructor(events: IEvents) {
+    this.events = events;
+  }
 
   /**
-   * Обновляет одно поле модели покупателя.
-   * Позволяет сохранить отдельное значение, не затрагивая остальные.
-   * @param field — ключ поля интерфейса IBuyer
-   * @param value — новое значение поля
+   * Обновляет одно поле модели покупателя и генерирует событие.
+   * @param field  ключ поля интерфейса IBuyer
+   * @param value  новое значение поля
    */
   updateField(field: keyof IBuyer, value: string): void {
     if (field === 'payment') {
@@ -33,6 +35,7 @@ export class CustomerModel {
     } else if (field === 'phone') {
       this._customerPhone = value;
     }
+    this.events.emit('customer:changed');
   }
 
   /**
@@ -40,7 +43,7 @@ export class CustomerModel {
    */
   getBuyerData(): IBuyer {
     return {
-      payment: this._paymentMethod ,
+      payment: this._paymentMethod,
       address: this._deliveryAddress,
       email: this._customerEmail,
       phone: this._customerPhone,
@@ -48,19 +51,18 @@ export class CustomerModel {
   }
 
   /**
-   * Сбрасывает все поля модели в пустые значения.
+   * Сбрасывает все поля модели и генерирует событие.
    */
   resetData(): void {
     this._paymentMethod = '';
     this._deliveryAddress = '';
     this._customerEmail = '';
     this._customerPhone = '';
+    this.events.emit('customer:changed');
   }
 
   /**
-   * Проверяет валидность введённых данных.
-   * Возвращает объект с ошибками по полям; если поле корректно — его ключ отсутствует.
-   * Пример: { payment: 'Не выбран способ оплаты', phone: 'Укажите телефон' }
+   * Проверяет валидность полей и возвращает объект с ошибками.
    */
   checkValidity(): TValidationErrors {
     const errors: TValidationErrors = {};
